@@ -1,10 +1,14 @@
+import {
+    getVerseByJuz,
+    getUthmaniVerseById,
+    getVerseByChapter,
+} from '../controllers/Verse.js';
 import express from 'express';
-import { getUthmaniVerseById, getVerseById } from '../controllers/Verse.js';
 
 const router = express.Router();
 
-router.get('/uthmani', getUthmaniVerseById);
-
-router.get('/get', getVerseById);
+router.get('/by_juz/:id_juz', getVerseByJuz);
+router.get('/by_chapter/:id_chapter', getVerseByChapter);
+// router.get('/uthmani', getUthmaniVerseById);
 
 export default router;

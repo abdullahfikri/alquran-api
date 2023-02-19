@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { getAllChapter } from '../controllers/Chapter.js';
+import { getAllChapter, getChapter } from '../controllers/Chapter.js';
 
 const router = Router();
 
-router.get('/getchapter', getAllChapter);
+router.get('/', getAllChapter);
+router.get('/:id_chapter', getChapter);
 
 export default router;

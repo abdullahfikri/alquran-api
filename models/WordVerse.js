@@ -10,7 +10,23 @@ const WordVerse = sequelize.define(
             autoIncrement: true,
             allowNull: false,
         },
-        text: {
+        text_uthmani: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        text_uthmani_simple: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        text_imlaei: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        text_imlaei_simple: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        text_indopak: {
             type: DataTypes.TEXT,
             allowNull: false,
         },
@@ -27,6 +43,22 @@ const WordVerse = sequelize.define(
             allowNull: false,
         },
         unicode: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        unicode_uthmani_simple: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        unicode_imlaei: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        unicode_imlaei_simple: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
+        unicode_indopak: {
             type: DataTypes.TEXT,
             allowNull: false,
         },

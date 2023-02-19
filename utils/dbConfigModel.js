@@ -13,8 +13,7 @@ import VerseTranslation from '../models/VerseTranslation.js';
 import WordTranslation from '../models/WordTranslation.js';
 import WordVerse from '../models/WordVerse.js';
 
-// Config RELATION TABLE
-const configRelation = () => {
+const configModel = () => {
     Juz.hasMany(Verse, { foreignKey: 'id_juz' });
     Verse.belongsTo(Juz, { foreignKey: 'id_juz' });
 
@@ -61,4 +60,4 @@ const configRelation = () => {
     ChapterAudio.belongsTo(Chapter, { foreignKey: 'id_chapter' });
 };
 
-export default configRelation;
+export default configModel;
