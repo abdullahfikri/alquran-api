@@ -15,6 +15,7 @@ import LanguageRoute from './routes/languageRoute.js';
 import RecitationRoute from './routes/recitationRoute.js';
 import TranslationRoute from './routes/translationRoute.js';
 import WordVerseRoute from './routes/wordVerseRoute.js';
+import TafsirRoute from './routes/tafsirRoute.js';
 // import db config
 import dbConfig from './utils/dbConfigModel.js';
 dbConfig();
@@ -26,7 +27,7 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
 app.use(express.json());
 app.use(bodyParser.json());
-app.use(morgan('common'));
+app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use('/juzs', JuzRoute);
@@ -36,6 +37,7 @@ app.use('/languages', LanguageRoute);
 app.use('/recitations', RecitationRoute);
 app.use('/translations', TranslationRoute);
 app.use('/words', WordVerseRoute);
+app.use('/tafsirs', TafsirRoute);
 
 const PORT = process.env.PORT || 5000;
 sequelize.sync().then(async (reseult) => {

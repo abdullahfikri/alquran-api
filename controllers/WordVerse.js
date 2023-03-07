@@ -81,7 +81,7 @@ const getWord = async ({
                                   {
                                       model: Language,
                                       where: {
-                                          id: id_language,
+                                          id: Number(id_language),
                                       },
                                   },
                               ],

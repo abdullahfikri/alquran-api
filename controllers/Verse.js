@@ -2,6 +2,7 @@ import Verse from '../models/Verse.js';
 import VerseTranslation from '../models/VerseTranslation.js';
 import TranslationModel from '../models/Translation.js';
 import VerseTafsir from '../models/VerseTafsir.js';
+import Tafsir from '../models/Tafsir.js';
 import VerseAudio from '../models/VerseAudio.js';
 import Recitation from '../models/Recitation.js';
 import { Op } from 'sequelize';
@@ -15,12 +16,14 @@ const getVerse = async ({
     id_recitation,
     page,
     per_page = 10,
+    text_uthmani,
+    text_imlaei,
+    text_indopak,
 }) => {
     // Check if id_chapter and id_juz is valid
     if (id_chapter > 114 || id_chapter < 1) {
         return { message: 'Id chapter is invalid' };
-    }
-    if (id_juz < 1 || id_juz > 30) {
+    } else if (id_juz < 1 || id_juz > 30) {
         return { message: 'Id Juz is invalid' };
     }
 
@@ -31,6 +34,24 @@ const getVerse = async ({
         });
         if (!translation.length) {
             return { message: 'Id translation is invalid' };
+        }
+    }
+    // Check if id_recitation is valid
+    if (id_recitation) {
+        const recitation = await Recitation.findOne({
+            where: { id: id_recitation },
+        });
+        if (!recitation) {
+            return { message: 'Id recitation is invalid' };
+        }
+    }
+    // Check if id_tafsir is valid
+    if (id_tafsir) {
+        const tafsir = await Tafsir.findOne({
+            where: { id: id_tafsir },
+        });
+        if (!tafsir) {
+            return { message: 'Id tafsir is invalid' };
         }
     }
 
@@ -50,7 +71,7 @@ const getVerse = async ({
         });
     }
 
-    if (!id_translation && !id_tafsir) {
+    if (!id_translation && !id_tafsir && !id_recitation) {
         verses = await Verse.findAll({
             where: {
                 ...(id_chapter
@@ -61,6 +82,7 @@ const getVerse = async ({
                 limit: per_page,
                 offset: startIndex,
             }),
+
             raw: true,
         });
     } else {
@@ -104,8 +126,11 @@ const getVerse = async ({
                                               [Op.col]: 'verse.id',
                                           },
                                       },
-                                      { id_translation },
+                                      { id_translation: id_translation },
                                   ],
+                              },
+                              include: {
+                                  model: TranslationModel,
                               },
                           },
                       ]
@@ -124,14 +149,9 @@ const getVerse = async ({
                                       { id_recitation },
                                   ],
                               },
-                              include: [
-                                  {
-                                      model: Recitation,
-                                      where: {
-                                          id: id_recitation,
-                                      },
-                                  },
-                              ],
+                              include: {
+                                  model: Recitation,
+                              },
                           },
                       ]
                     : []),
@@ -146,44 +166,93 @@ const getVerse = async ({
             id_chapter: verse.id_chapter,
             number_in_chapter: verse.number,
             transliteration: verse.transliteration,
-            text: {
-                text_uthmani: verse.text_uthmani,
-                text_uthmani_simple: verse.text_uthmani_simple,
-                text_imlaei: verse.text_imlaei,
-                text_imlaei_simple: verse.text_imlaei_simple,
-                text_indopak: verse.text_indopak,
-            },
-            ...(unicode === 'true' && {
-                unicode: {
-                    unicode_uthmani: verse.unicode_uthmani,
-                    unicode_uthmani_simple: verse.unicode_uthmani_simple,
-                    unicode_imlaei: verse.unicode_imlaei,
-                    unicode_imlaei_simple: verse.unicode_imlaei_simple,
-                    unicode_indopak: verse.unicode_indopak,
-                },
-            }),
+            ...(!text_uthmani &&
+                !text_indopak &&
+                !text_imlaei && {
+                    text: {
+                        text_uthmani: verse.text_uthmani,
+                        text_uthmani_simple: verse.text_uthmani_simple,
+                        text_imlaei: verse.text_imlaei,
+                        text_imlaei_simple: verse.text_imlaei_simple,
+                        text_indopak: verse.text_indopak,
+                    },
+                }),
+            ...(text_uthmani || text_indopak || text_imlaei
+                ? {
+                      text: {
+                          ...(text_uthmani && {
+                              text_uthmani: verse.text_uthmani,
+                              text_uthmani_simple: verse.text_uthmani_simple,
+                          }),
+                          ...(text_imlaei && {
+                              text_imlaei: verse.text_imlaei,
+                              text_imlaei_simple: verse.text_imlaei_simple,
+                          }),
+                          ...(text_indopak && {
+                              text_indopak: verse.text_indopak,
+                          }),
+                      },
+                  }
+                : []),
+            ...(!text_uthmani &&
+                !text_indopak &&
+                !text_imlaei && {
+                    ...(unicode === 'true' && {
+                        unicode: {
+                            unicode_uthmani: verse.unicode_uthmani,
+                            unicode_uthmani_simple:
+                                verse.unicode_uthmani_simple,
+                            unicode_imlaei: verse.unicode_imlaei,
+                            unicode_imlaei_simple: verse.unicode_imlaei_simple,
+                            unicode_indopak: verse.unicode_indopak,
+                        },
+                    }),
+                }),
+
+            ...(text_uthmani || text_indopak || text_imlaei
+                ? {
+                      ...(unicode === 'true' && {
+                          unicode: {
+                              ...(text_uthmani && {
+                                  unicode_uthmani: verse.unicode_uthmani,
+                                  unicode_uthmani_simple:
+                                      verse.unicode_uthmani_simple,
+                              }),
+                              ...(text_imlaei && {
+                                  unicode_imlaei: verse.unicode_imlaei,
+                                  unicode_imlaei_simple:
+                                      verse.unicode_imlaei_simple,
+                              }),
+                              ...(text_indopak && {
+                                  unicode_indopak: verse.unicode_indopak,
+                              }),
+                          },
+                      }),
+                  }
+                : []),
+
             ...(id_translation && {
                 translation: {
                     id: verse['verse_translations.id'],
                     text: verse['verse_translations.text'],
-                    id_translator: verse['verse_translations.id_translation'],
+                    // WARNING: BETA FEATURE (NOT PASS TEST YET)
+                    id_translation: verse['verse_translations.id_translation'],
                 },
             }),
             ...(id_tafsir && {
                 tafsir: {
                     id: verse['verse_tafsirs.id'],
                     text: verse['verse_tafsirs.text'],
+                    // WARNING: BETA FEATURE (NOT PASS TEST YET)
+                    id_tafsir: id_tafsir,
                 },
             }),
             ...(id_recitation && {
                 audio: {
                     id: verse['verse_audios.id'],
                     url: verse['verse_audios.url'],
-                    recitation_info: {
-                        id: verse['verse_audios.id_recitation'],
-                        reciter: verse['verse_audios.recitation.reciter_name'],
-                        style: verse['verse_audios.recitation.style'],
-                    },
+                    // WARNING: BETA FEATURE (NOT PASS TEST YET)
+                    id_recitation: id_recitation,
                 },
             }),
         };
@@ -258,100 +327,55 @@ export const getVerseByChapter = async (req, res) => {
 };
 
 // uthmani
-export const getUthmaniVerseById = async (req, res) => {
-    const { id = null, chapter_id, juz_id, chapter_ayat_id } = req.query;
-    console.log(id);
-    const attributes = [
-        'id',
-        'text_uthmani',
-        'text_uthmani_simple',
-        'number',
-        'transliteration',
-        'unicode_uthmani',
-        'unicode_uthmani_simple',
-        'id_juz',
-        'id_chapter',
-    ];
-
-    if (chapter_ayat_id && !chapter_id) {
-        return res.status(404).json({ message: 'Data not found' });
-    }
-    if (chapter_ayat_id && chapter_id) {
-        try {
-            const response = await Verse.findOne({
-                where: {
-                    [Op.and]: [
-                        { number: chapter_ayat_id },
-                        { id_chapter: chapter_id },
-                    ],
-                },
-                attributes,
-                raw: true,
-            });
-
-            if (!response) {
-                return res.status(404).json({
-                    message: `Data not found, verse ${chapter_id}: ayah ${chapter_ayat_id}`,
-                });
-            }
-
-            const {
-                id: id_ayat,
-                text_uthmani,
-                text_uthmani_simple,
-                transliteration,
-                unicode_uthmani,
-                unicode_uthmani_simple,
-                id_juz,
-                id_chapter,
-                number: id_chapter_ayat,
-            } = response;
-
-            return res.status(200).json({
-                id_ayat,
-                text_uthmani,
-                text_uthmani_simple,
-                transliteration,
-                unicode_uthmani,
-                unicode_uthmani_simple,
-                id_juz,
-                id_chapter,
-                id_chapter_ayat,
-            });
-        } catch (error) {
-            return res
-                .status(500)
-                .json({ message: 'Internal Server Error', error });
-        }
-    }
+export const getUthmaniVerseByJuz = async (req, res) => {
+    const {
+        translation: id_translation,
+        tafsir: id_tafsir,
+        unicode,
+        recitation: id_recitation,
+        page,
+        per_page,
+    } = req.query;
+    const { id_juz } = req.params;
     try {
-        const {
-            id: id_ayat,
-            text_uthmani,
-            text_uthmani_simple,
-            transliteration,
-            unicode_uthmani,
-            unicode_uthmani_simple,
+        const verse = await getVerse({
+            id_translation,
+            id_tafsir,
             id_juz,
-            id_chapter,
-            number: id_chapter_ayat,
-        } = await Verse.findOne({
-            where: { id },
-            attributes,
-            raw: true,
+            unicode,
+            id_recitation,
+            page,
+            per_page,
+            text_uthmani: true,
         });
-
-        res.status(200).json({
-            id_ayat,
-            text_uthmani,
-            text_uthmani_simple,
-            transliteration,
-            unicode_uthmani,
-            unicode_uthmani_simple,
-            id_juz,
+        return res.status(200).json(verse);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal Server Error', error });
+    }
+};
+export const getUthmaniVerseByChapter = async (req, res) => {
+    const {
+        translation: id_translation,
+        tafsir: id_tafsir,
+        unicode,
+        recitation: id_recitation,
+        page,
+        per_page,
+    } = req.query;
+    const { id_chapter } = req.params;
+    try {
+        const verse = await getVerse({
+            id_translation,
+            id_tafsir,
             id_chapter,
-            id_chapter_ayat,
+            unicode,
+            id_recitation,
+            page,
+            per_page,
+            text_uthmani: true,
         });
+        return res.status(200).json(verse);
     } catch (error) {
         res.status(500).json({ message: 'Internal Server Error', error });
     }
@@ -359,4 +383,111 @@ export const getUthmaniVerseById = async (req, res) => {
 
 // text_imlaei
 
+export const getImlaeiVerseByJuz = async (req, res) => {
+    const {
+        translation: id_translation,
+        tafsir: id_tafsir,
+        unicode,
+        recitation: id_recitation,
+        page,
+        per_page,
+    } = req.query;
+    const { id_juz } = req.params;
+    try {
+        const verse = await getVerse({
+            id_translation,
+            id_tafsir,
+            id_juz,
+            unicode,
+            id_recitation,
+            page,
+            per_page,
+            text_imlaei: true,
+        });
+        return res.status(200).json(verse);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal Server Error', error });
+    }
+};
+export const getImlaeiVerseByChapter = async (req, res) => {
+    const {
+        translation: id_translation,
+        tafsir: id_tafsir,
+        unicode,
+        recitation: id_recitation,
+        page,
+        per_page,
+    } = req.query;
+    const { id_chapter } = req.params;
+    try {
+        const verse = await getVerse({
+            id_translation,
+            id_tafsir,
+            id_chapter,
+            unicode,
+            id_recitation,
+            page,
+            per_page,
+            text_imlaei: true,
+        });
+        return res.status(200).json(verse);
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error });
+    }
+};
 // text_indopak
+
+export const getIndopakVerseByJuz = async (req, res) => {
+    const {
+        translation: id_translation,
+        tafsir: id_tafsir,
+        unicode,
+        recitation: id_recitation,
+        page,
+        per_page,
+    } = req.query;
+    const { id_juz } = req.params;
+    try {
+        const verse = await getVerse({
+            id_translation,
+            id_tafsir,
+            id_juz,
+            unicode,
+            id_recitation,
+            page,
+            per_page,
+            text_indopak: true,
+        });
+        return res.status(200).json(verse);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal Server Error', error });
+    }
+};
+export const getIndopakVerseByChapter = async (req, res) => {
+    const {
+        translation: id_translation,
+        tafsir: id_tafsir,
+        unicode,
+        recitation: id_recitation,
+        page,
+        per_page,
+    } = req.query;
+    const { id_chapter } = req.params;
+    try {
+        const verse = await getVerse({
+            id_translation,
+            id_tafsir,
+            id_chapter,
+            unicode,
+            id_recitation,
+            page,
+            per_page,
+            text_uthmani: true,
+        });
+        return res.status(200).json(verse);
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error', error });
+    }
+};
