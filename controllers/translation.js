@@ -17,7 +17,7 @@ export const getTranslations = async (req, res) => {
     let { chapter_number, juz_number, page, per_page = 10 } = req.query;
 
     if (chapter_number && juz_number) {
-        res.status(400).json({
+        return res.status(400).json({
             message: 'Please choose one between the id juz or id chapter.',
         });
     }

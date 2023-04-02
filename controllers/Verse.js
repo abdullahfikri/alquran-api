@@ -6,6 +6,7 @@ import Tafsir from '../models/Tafsir.js';
 import VerseAudio from '../models/VerseAudio.js';
 import Recitation from '../models/Recitation.js';
 import { Op } from 'sequelize';
+import WordVerse from '../models/WordVerse.js';
 
 const getVerse = async ({
     id_translation,
@@ -20,6 +21,7 @@ const getVerse = async ({
     text_imlaei,
     text_indopak,
     id_verse,
+    words = false,
 }) => {
     // Check if id_chapter and id_juz is valid
     if (id_chapter > 114 || id_chapter < 1) {
@@ -72,7 +74,7 @@ const getVerse = async ({
         });
     }
 
-    if (!id_translation && !id_tafsir && !id_recitation) {
+    if (!id_translation && !id_tafsir && !id_recitation && !words) {
         console.log(id_verse);
         verses = await Verse.findAll({
             where: {
@@ -157,109 +159,144 @@ const getVerse = async ({
                           },
                       ]
                     : []),
+                // ...(words
+                //     ? [
+                //           {
+                //               model: WordVerse,
+                //               //   required: false,
+                //               where: {
+                //                   [Op.and]: [
+                //                       {
+                //                           id_verse: {
+                //                               [Op.col]: 'verse.id',
+                //                           },
+                //                       },
+                //                   ],
+                //               },
+                //           },
+                //       ]
+                //     : []),
             ],
+
             raw: true,
         });
     }
 
-    const newVerse = verses.map((verse) => {
-        return {
-            id_verse: verse.id,
-            id_juz: verse.id_juz,
-            id_chapter: verse.id_chapter,
-            number_in_chapter: verse.number,
-            transliteration: verse.transliteration,
-            ...(!text_uthmani &&
-                !text_indopak &&
-                !text_imlaei && {
-                    text: {
-                        text_uthmani: verse.text_uthmani,
-                        text_uthmani_simple: verse.text_uthmani_simple,
-                        text_imlaei: verse.text_imlaei,
-                        text_imlaei_simple: verse.text_imlaei_simple,
-                        text_indopak: verse.text_indopak,
-                    },
-                }),
-            ...(text_uthmani || text_indopak || text_imlaei
-                ? {
-                      text: {
-                          ...(text_uthmani && {
-                              text_uthmani: verse.text_uthmani,
-                              text_uthmani_simple: verse.text_uthmani_simple,
-                          }),
-                          ...(text_imlaei && {
-                              text_imlaei: verse.text_imlaei,
-                              text_imlaei_simple: verse.text_imlaei_simple,
-                          }),
-                          ...(text_indopak && {
-                              text_indopak: verse.text_indopak,
-                          }),
-                      },
-                  }
-                : []),
-            ...(!text_uthmani &&
-                !text_indopak &&
-                !text_imlaei && {
-                    ...(unicode === 'true' && {
-                        unicode: {
-                            unicode_uthmani: verse.unicode_uthmani,
-                            unicode_uthmani_simple:
-                                verse.unicode_uthmani_simple,
-                            unicode_imlaei: verse.unicode_imlaei,
-                            unicode_imlaei_simple: verse.unicode_imlaei_simple,
-                            unicode_indopak: verse.unicode_indopak,
+    const newVerse = await Promise.all(
+        verses.map(async (verse) => {
+            let words_array = [];
+            if (words) {
+                words_array = await WordVerse.findAll({
+                    where: { id_verse: verse.id },
+                    raw: true,
+                });
+            }
+
+            return {
+                id_verse: verse.id,
+                id_juz: verse.id_juz,
+                id_chapter: verse.id_chapter,
+                number_in_chapter: verse.number,
+                transliteration: verse.transliteration,
+                ...(!text_uthmani &&
+                    !text_indopak &&
+                    !text_imlaei && {
+                        text: {
+                            text_uthmani: verse.text_uthmani,
+                            text_uthmani_simple: verse.text_uthmani_simple,
+                            text_imlaei: verse.text_imlaei,
+                            text_imlaei_simple: verse.text_imlaei_simple,
+                            text_indopak: verse.text_indopak,
                         },
                     }),
-                }),
-
-            ...(text_uthmani || text_indopak || text_imlaei
-                ? {
-                      ...(unicode === 'true' && {
-                          unicode: {
+                ...(text_uthmani || text_indopak || text_imlaei
+                    ? {
+                          text: {
                               ...(text_uthmani && {
-                                  unicode_uthmani: verse.unicode_uthmani,
-                                  unicode_uthmani_simple:
-                                      verse.unicode_uthmani_simple,
+                                  text_uthmani: verse.text_uthmani,
+                                  text_uthmani_simple:
+                                      verse.text_uthmani_simple,
                               }),
                               ...(text_imlaei && {
-                                  unicode_imlaei: verse.unicode_imlaei,
-                                  unicode_imlaei_simple:
-                                      verse.unicode_imlaei_simple,
+                                  text_imlaei: verse.text_imlaei,
+                                  text_imlaei_simple: verse.text_imlaei_simple,
                               }),
                               ...(text_indopak && {
-                                  unicode_indopak: verse.unicode_indopak,
+                                  text_indopak: verse.text_indopak,
                               }),
                           },
-                      }),
-                  }
-                : []),
+                      }
+                    : []),
+                ...(!text_uthmani &&
+                    !text_indopak &&
+                    !text_imlaei && {
+                        ...(unicode === 'true' && {
+                            unicode: {
+                                unicode_uthmani: verse.unicode_uthmani,
+                                unicode_uthmani_simple:
+                                    verse.unicode_uthmani_simple,
+                                unicode_imlaei: verse.unicode_imlaei,
+                                unicode_imlaei_simple:
+                                    verse.unicode_imlaei_simple,
+                                unicode_indopak: verse.unicode_indopak,
+                            },
+                        }),
+                    }),
 
-            ...(id_translation && {
-                translation: {
-                    id: verse['verse_translations.id'],
-                    text: verse['verse_translations.text'],
-                    // WARNING: BETA FEATURE (NOT PASS TEST YET)
-                    id_translation: verse['verse_translations.id_translation'],
-                },
-            }),
-            ...(id_tafsir && {
-                tafsir: {
-                    id: verse['verse_tafsirs.id'],
-                    text: verse['verse_tafsirs.text'],
-                    // WARNING: BETA FEATURE (NOT PASS TEST YET)
-                    id_tafsir: id_tafsir,
-                },
-            }),
-            ...(id_recitation && {
-                audio: {
-                    id: verse['verse_audios.id'],
-                    url: verse['verse_audios.url'],
-                    // WARNING: BETA FEATURE (NOT PASS TEST YET)
-                    id_recitation: id_recitation,
-                },
-            }),
-        };
-    });
+                ...(text_uthmani || text_indopak || text_imlaei
+                    ? {
+                          ...(unicode === 'true' && {
+                              unicode: {
+                                  ...(text_uthmani && {
+                                      unicode_uthmani: verse.unicode_uthmani,
+                                      unicode_uthmani_simple:
+                                          verse.unicode_uthmani_simple,
+                                  }),
+                                  ...(text_imlaei && {
+                                      unicode_imlaei: verse.unicode_imlaei,
+                                      unicode_imlaei_simple:
+                                          verse.unicode_imlaei_simple,
+                                  }),
+                                  ...(text_indopak && {
+                                      unicode_indopak: verse.unicode_indopak,
+                                  }),
+                              },
+                          }),
+                      }
+                    : []),
+
+                ...(id_translation && {
+                    translation: {
+                        id: verse['verse_translations.id'],
+                        text: verse['verse_translations.text'],
+                        // WARNING: BETA FEATURE (NOT PASS TEST YET)
+                        id_translation:
+                            verse['verse_translations.id_translation'],
+                    },
+                }),
+                ...(id_recitation && {
+                    audio: {
+                        id: verse['verse_audios.id'],
+                        url: verse['verse_audios.url'],
+                        // WARNING: BETA FEATURE (NOT PASS TEST YET)
+                        id_recitation: id_recitation,
+                    },
+                }),
+                ...(id_tafsir && {
+                    tafsir: {
+                        id: verse['verse_tafsirs.id'],
+                        text: verse['verse_tafsirs.text'],
+                        // WARNING: BETA FEATURE (NOT PASS TEST YET)
+                        id_tafsir: id_tafsir,
+                    },
+                }),
+
+                ...(words && {
+                    words: words_array,
+                }),
+            };
+        })
+    );
 
     const data = {
         verses: newVerse,
@@ -284,6 +321,7 @@ export const getVerseByJuz = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -295,6 +333,7 @@ export const getVerseByJuz = async (req, res) => {
             id_recitation,
             page,
             per_page,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -311,6 +350,7 @@ export const getVerseByChapter = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -322,6 +362,7 @@ export const getVerseByChapter = async (req, res) => {
             id_recitation,
             page,
             per_page,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -336,6 +377,7 @@ export const getSingleVerse = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -347,6 +389,7 @@ export const getSingleVerse = async (req, res) => {
             id_recitation,
             page,
             per_page,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -364,6 +407,7 @@ export const getUthmaniVerseByJuz = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -376,6 +420,7 @@ export const getUthmaniVerseByJuz = async (req, res) => {
             page,
             per_page,
             text_uthmani: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -391,6 +436,7 @@ export const getUthmaniVerseByChapter = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -403,6 +449,7 @@ export const getUthmaniVerseByChapter = async (req, res) => {
             page,
             per_page,
             text_uthmani: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -418,6 +465,7 @@ export const getUthmaniSingleVerse = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -430,6 +478,7 @@ export const getUthmaniSingleVerse = async (req, res) => {
             page,
             per_page,
             text_uthmani: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -448,6 +497,7 @@ export const getImlaeiVerseByJuz = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -460,6 +510,7 @@ export const getImlaeiVerseByJuz = async (req, res) => {
             page,
             per_page,
             text_imlaei: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -475,6 +526,7 @@ export const getImlaeiVerseByChapter = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -487,6 +539,7 @@ export const getImlaeiVerseByChapter = async (req, res) => {
             page,
             per_page,
             text_imlaei: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -501,6 +554,7 @@ export const getImlaeiSingleVerse = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -513,6 +567,7 @@ export const getImlaeiSingleVerse = async (req, res) => {
             page,
             per_page,
             text_imlaei: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -530,6 +585,7 @@ export const getIndopakVerseByJuz = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -542,6 +598,7 @@ export const getIndopakVerseByJuz = async (req, res) => {
             page,
             per_page,
             text_indopak: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -557,6 +614,7 @@ export const getIndopakVerseByChapter = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -568,7 +626,8 @@ export const getIndopakVerseByChapter = async (req, res) => {
             id_recitation,
             page,
             per_page,
-            text_uthmani: true,
+            text_indopak: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -584,6 +643,7 @@ export const getIndopakSingleVerse = async (req, res) => {
         recitation: id_recitation,
         page,
         per_page,
+        words,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -596,6 +656,7 @@ export const getIndopakSingleVerse = async (req, res) => {
             page,
             per_page,
             text_indopak: true,
+            words,
         });
         return res.status(200).json(verse);
     } catch (error) {
