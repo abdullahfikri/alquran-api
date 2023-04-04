@@ -1,7 +1,7 @@
 
 # Al-Qur'an API Muhammad Fikri
 
-This API data source is derived from the combination of several parameters and processes behind the scenes sourced from https://quran.api-docs.io and https://quran.kemenag.go.id.
+This API data source is derived from the combination of several parameters and processes behind the scenes sourced from https://quran.api-docs.io and https://quran-api-id.vercel.app.
 
 
 
