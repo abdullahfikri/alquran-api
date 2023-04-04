@@ -7,6 +7,8 @@ import VerseAudio from '../models/VerseAudio.js';
 import Recitation from '../models/Recitation.js';
 import { Op } from 'sequelize';
 import WordVerse from '../models/WordVerse.js';
+import WordTranslation from '../models/WordTranslation.js';
+import Language from '../models/Language.js';
 
 const getVerse = async ({
     id_translation,
@@ -22,6 +24,7 @@ const getVerse = async ({
     text_indopak,
     id_verse,
     words = false,
+    id_language,
 }) => {
     // Check if id_chapter and id_juz is valid
     if (id_chapter > 114 || id_chapter < 1) {
@@ -55,6 +58,15 @@ const getVerse = async ({
         });
         if (!tafsir) {
             return { message: 'Id tafsir is invalid' };
+        }
+    }
+
+    if (id_language) {
+        const languages = await Language.findOne({
+            where: { id: id_language },
+        });
+        if (!languages) {
+            return { message: 'Id Language is invalid' };
         }
     }
 
@@ -189,6 +201,15 @@ const getVerse = async ({
                 words_array = await WordVerse.findAll({
                     where: { id_verse: verse.id },
                     raw: true,
+                    include: {
+                        model: WordTranslation,
+                        where: {
+                            ...(id_language
+                                ? { id_language: id_language }
+                                : { id_language: 13 }),
+                        },
+                    },
+                    nest: true,
                 });
             }
 
@@ -322,6 +343,7 @@ export const getVerseByJuz = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -334,6 +356,7 @@ export const getVerseByJuz = async (req, res) => {
             page,
             per_page,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -351,6 +374,7 @@ export const getVerseByChapter = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -363,6 +387,7 @@ export const getVerseByChapter = async (req, res) => {
             page,
             per_page,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -378,6 +403,7 @@ export const getSingleVerse = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -390,6 +416,7 @@ export const getSingleVerse = async (req, res) => {
             page,
             per_page,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -408,6 +435,7 @@ export const getUthmaniVerseByJuz = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -421,6 +449,7 @@ export const getUthmaniVerseByJuz = async (req, res) => {
             per_page,
             text_uthmani: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -437,6 +466,7 @@ export const getUthmaniVerseByChapter = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -450,6 +480,7 @@ export const getUthmaniVerseByChapter = async (req, res) => {
             per_page,
             text_uthmani: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -466,6 +497,7 @@ export const getUthmaniSingleVerse = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -479,6 +511,7 @@ export const getUthmaniSingleVerse = async (req, res) => {
             per_page,
             text_uthmani: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -498,6 +531,7 @@ export const getImlaeiVerseByJuz = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -511,6 +545,7 @@ export const getImlaeiVerseByJuz = async (req, res) => {
             per_page,
             text_imlaei: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -527,6 +562,7 @@ export const getImlaeiVerseByChapter = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -540,6 +576,7 @@ export const getImlaeiVerseByChapter = async (req, res) => {
             per_page,
             text_imlaei: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -555,6 +592,7 @@ export const getImlaeiSingleVerse = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -568,6 +606,7 @@ export const getImlaeiSingleVerse = async (req, res) => {
             per_page,
             text_imlaei: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -586,6 +625,7 @@ export const getIndopakVerseByJuz = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_juz } = req.params;
     try {
@@ -599,6 +639,7 @@ export const getIndopakVerseByJuz = async (req, res) => {
             per_page,
             text_indopak: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -615,6 +656,7 @@ export const getIndopakVerseByChapter = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_chapter } = req.params;
     try {
@@ -628,6 +670,7 @@ export const getIndopakVerseByChapter = async (req, res) => {
             per_page,
             text_indopak: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
@@ -644,6 +687,7 @@ export const getIndopakSingleVerse = async (req, res) => {
         page,
         per_page,
         words,
+        language: id_language,
     } = req.query;
     const { id_verse } = req.params;
     try {
@@ -657,6 +701,7 @@ export const getIndopakSingleVerse = async (req, res) => {
             per_page,
             text_indopak: true,
             words,
+            id_language,
         });
         return res.status(200).json(verse);
     } catch (error) {
