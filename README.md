@@ -20,10 +20,11 @@ This API data source is derived from the combination of several parameters and p
 
 To use this API, you need to combine the API server URL with the endpoint.
 
-API server URL = https://api.mfikridev.xyz/
+
+API server URL = //Unavaillable https://api.mfikridev.xyz/
 
 Example Usage:
-https://api.mfikridev.xyz/juzs
+//Unavaillable https://api.mfikridev.xyz/juzs
 
 
 ## Endpoint Usage
